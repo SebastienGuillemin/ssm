@@ -1,0 +1,169 @@
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX stups: <http://www.stups.fr/ontologies/2023/stups/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# R1 : Vérification des logos.
+INSERT
+{
+    ?e1 stups:estEloigneDe ?e2
+}
+WHERE
+{
+    ?e1 stups:estProcheDe ?e2 .
+    ?e1 stups:logo ?logo1 .
+    ?e2 stups:logo ?logo2 .
+    ?e1 stups:nomLogo ?nomLogo1 .
+    ?e2 stups:nomLogo ?nomLogo2 .
+    FILTER(?logo1 != ?logo2 || ?nomLogo1 != ?nomLogo2)
+}
+
+# R2 : Vérification des formes chimiques.
+INSERT
+{
+    ?e1 stups:estEloigneDe ?e2
+}
+WHERE
+{
+    ?e1 stups:estProcheDe ?e2 .
+    ?e1 stups:aPrincipeActif ?p1 .
+    ?e2 stups:aPrincipeActif ?p2 .
+    ?p1 stups:aFormeChimique ?f1 .
+    ?p2 stups:aFormeChimique ?f2 .
+    FILTER (?f1 != ?f2)
+}
+
+# R3 : Vérification des dates.
+INSERT
+{
+    ?e1 stups:estEloigneDe ?e2 .
+}
+WHERE
+{
+    ?e1 stups:estProcheDe ?e2 .
+    ?e1 stups:provientDe ?sc1 .
+    ?sc1 stups:estDansSaisine ?s1 .
+    ?s1 stups:date ?d1 .
+    
+    ?e2 stups:provientDe ?sc2 .
+    ?sc2 stups:estDansSaisine ?s2 .
+    ?s2 stups:date ?d2 .
+    FILTER(?d1 >= ?d2)
+    
+    bind(((?d1 - ?d2) >= "P0Y6M30DT0H0M0.000S"^^xsd:duration)  as ?diff)
+    
+    FILTER(?diff)
+}
+
+# R4 : Vérification des caractéristiques macroscopiques.
+INSERT
+{
+    ?e1 stups:estEloigneDe ?e2
+}
+WHERE 
+{
+    ?e1 stups:estProcheDe ?e2 .
+    
+    ?p1 rdfs:subPropertyOf stups:caracteristiqueMacroscopique .
+    BIND(datatype(?v1) as ?type1)  .
+    
+    ?p2 rdfs:subPropertyOf stups:caracteristiqueMacroscopique .
+    BIND(datatype(?v2) as ?type2) .
+    ?e1 ?p1 ?v1 .
+    ?e2 ?p2 ?v2 .
+    BIND(IF(?v1 >= ?v2, ?v1, ?v2) as ?maxValue) .
+    BIND(IF(?v1 < ?v2, ?v1, ?v2) as ?minValue) .
+    
+    FILTER (STR(?e1) < STR(?e2) && ?p1 != stups:caracteristiqueMacroscopique && ?p2 != stups:caracteristiqueMacroscopique && ?p1 = ?p2)
+    FILTER (
+        ((?type1 = xsd:string || ?type1 = xsd:boolean) && ?v1 != ?v2)
+        ||
+        ((?type1 = xsd:decimal || ?type1 = xsd:float || ?type1 = xsd:integer) && (100.0 - (?minValue * 100.0 / ?maxValue)) > 5) 
+    )
+}
+
+# R5 et R6 : Vérification des principes actifs.
+INSERT
+{
+    ?e1 stups:estEloigneDe ?e2
+}
+WHERE
+{
+    {
+        SELECT ?e1 ?e2 ?s1 ?s2 ?d1 ?d2
+        WHERE
+        {
+            ?e1 stups:estProcheDe ?e2 .
+            ?e1 stups:aPrincipeActif ?p1 .
+            ?p1 stups:aSubstance ?s1 .
+            ?p1 stups:dosage ?d1 .
+            ?e2 stups:aPrincipeActif ?p2 .
+            ?p2 stups:aSubstance ?s2 .
+            ?p2 stups:dosage ?d2 .
+            FILTER(STR(?e1) < STR(?e2))
+        }
+        GROUP BY ?e1 ?e2 ?s1 ?s2 ?d1 ?d2
+        HAVING (COUNT(DISTINCT ?p1) != COUNT(DISTINCT ?p2) || ?s1 != ?s2 || (?s1 = ?s2 && ABS(?d1 - ?d2) > 5))
+    }
+}
+
+# R7 : Vérification des produits de coupage.
+INSERT
+{
+    ?e1 stups:estEloigneDe ?e2
+}
+WHERE
+{
+    {
+        SELECT ?e1 ?e2 ?s1 ?s2
+        WHERE
+        {
+            ?e1 stups:estProcheDe ?e2 .
+            
+            ?e1 stups:aProduitCoupage ?pc1 .
+            ?pc1 stups:aSubstance ?s1 .
+            
+            ?e2 stups:aProduitCoupage ?pc2 .
+            ?pc2 stups:aSubstance ?s2 .
+            FILTER (STR(?e1) < STR(?e2))
+        }
+        GROUP BY ?e1 ?e2 ?s1 ?s2
+        HAVING (COUNT(DISTINCT ?pc1) != COUNT(DISTINCT ?pc2) || ?s1 != ?s2)
+    }
+}
+
+# R8 : Vérification du dosage des produits de coupage.
+INSERT
+{
+    ?e1 stups:estEloigneDe ?e2
+}
+WHERE
+{
+    {
+        SELECT ?e1 ?e2
+        WHERE
+        {
+            ?e1 stups:estProcheDe ?e2 .
+            ?e1 stups:aProduitCoupage ?pc1 .
+            ?pc1 stups:aSubstance ?s1 .
+            ?pc1 stups:dosage ?d1 .
+            ?e2 stups:aProduitCoupage ?pc2 .
+            ?pc2 stups:aSubstance ?s2 .
+            ?pc2 stups:dosage ?d2 .
+            FILTER (STR(?e1) < STR(?e2) && ?s1 = ?s2 && (ABS(?d1 - ?d2) > 5))
+        }
+    }
+}
+
+
+# R9 : Vérification du type de drogue.
+INSERT
+{
+    ?e1 stups:estEloigneDe ?e2
+}
+WHERE
+{
+    ?e1 stups:estProcheDe ?e2 .
+    ?e1 stups:typeDrogue ?t1 .
+    ?e2 stups:typeDrogue ?t2 .
+    FILTER(STR(?e1) < STR(?e2) && ?t1 != ?t2)
+}
