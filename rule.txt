@@ -117,12 +117,12 @@ WHERE
         WHERE
         {
             ?s1 a :Echantillon .
-            ?s1 :id "10169" .
+            ?s1 :id \"%s\" .
             ?s1 :aProduitCoupage ?pc1 .
             ?pc1 :aSubstance ?sb1 .
             
             ?s2 a :Echantillon .
-            ?s2 :id "10" .
+            ?s2 :id \"%s\" .
             ?s2 :aProduitCoupage ?pc2 .
             ?pc2 :aSubstance ?sb2 .
         }
@@ -133,12 +133,12 @@ WHERE
         WHERE
         {
             ?s1 a :Echantillon .
-            ?s1 :id "10169" .
+            ?s1 :id \"%s\" .
             ?s1 :aProduitCoupage ?pc1 .
             ?pc1 :aSubstance ?sb .
 
             ?s2 a :Echantillon .
-            ?s2 :id "10" .
+            ?s2 :id \"%s\" .
             ?s2 :aProduitCoupage ?pc2 .
             ?pc2 :aSubstance ?sb .
         }
