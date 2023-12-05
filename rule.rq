@@ -79,32 +79,79 @@ WHERE
     BIND ((((?type1 = xsd:string || ?type1 = xsd:boolean) && ?v1 != ?v2) || ((?type1 = xsd:decimal || ?type1 = xsd:float || ?type1 = xsd:integer) && (100.0 - (?minValue * 100.0 / ?maxValue)) > 5)) as ?match)
 }
 
-# R5 et R6 : Vérification des principes actifs.
-
-!!!!!!!!!!!!!! TODO : A TESTER !!!!!!!!!!!!!!
-(manque le dosage dans l'onto actuelle)
-
-SELECT ?s1 ?s2
+# R5 : Vérification des principes actifs.
+SELECT DISTINCT ?match
 WHERE
 {
     {
-        SELECT ?s1 ?sb1 ?d1 ?s2 ?sb2 ?d2
+        SELECT (COUNT(DISTINCT ?pc1) as ?countPC1) (COUNT(DISTINCT ?pc2) as ?countPC2) (COUNT(DISTINCT ?sb1) as ?countSB1) (COUNT(DISTINCT ?sb2) as ?countSB2)
         WHERE
         {
             ?s1 a :Echantillon .
+            ?s1 :id \"%s\" .
+            ?s1 :aPrincipeActif ?ap1 .
+            ?ap1 :aSubstance ?sb1 .
+            
             ?s2 a :Echantillon .
-
-            ?s1 :aPrincipeActif ?p1 .
-            ?p1 :aSubstance ?sb1 .
-            ?p1 :dosage ?d1 .
-            ?s2 :aPrincipeActif ?p2 .
-            ?p2 :aSubstance ?sb2 .
-            ?p2 :dosage ?d2 .
+            ?s1 :id \"%s\" .
+            ?s2 :aPrincipeActif ?ap2 .
+            ?ap2 :aSubstance ?sb2 .
         }
-        GROUP BY ?s1 ?sb1 ?d1 ?s2 ?sb2 ?d2
-        HAVING (COUNT(DISTINCT ?p1) != COUNT(DISTINCT ?p2) || ?sb1 != ?sb2 || (?sb1 = ?sb2 && ABS(?d1 - ?d2) > 5))
     }
-}
+    {
+        SELECT (COUNT(DISTINCT ?sb) as ?commonSB)
+        WHERE
+        {
+            ?s1 a :Echantillon .
+            ?s1 :id \"%s\" .
+            ?s1 :aPrincipeActif ?ap1 .
+            ?ap1 :aSubstance ?sb .
+
+            ?s2 a :Echantillon .
+            ?s1 :id \"%s\" .
+            ?s2 :aPrincipeActif ?ap2 .
+            ?ap2 :aSubstance ?sb .
+        }
+    }
+    BIND ((?countPC1 = ?countPC2 && ?countSB1 = ?countSB2 && ?countSB1 = ?commonSB) as ?match)
+}   
+
+# R6 : Vérification du dosage des principes actifs.
+PREFIX : <http://www.stups.fr/ontologies/2023/stups/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?match
+WHERE 
+{
+    {
+		SELECT (COUNT(?caracMatch) as ?countCaracNoMatch)
+        WHERE 
+        {
+            ?s1 a :Echantillon .
+            ?s2 a :Echantillon .
+            ?s1 :id \"%s\" .
+            ?s2 :id \"%s\" .
+
+            ?s1 ?p1 ?v1 .
+            ?s2 ?p2 ?v2 .
+
+            ?p1 rdfs:subPropertyOf :caracteristiqueMacroscopique .
+            ?p2 rdfs:subPropertyOf :caracteristiqueMacroscopique .
+
+            FILTER(?p1 = ?p2 && ?p1 != :caracteristiqueMacroscopique && ?p2 != :caracteristiqueMacroscopique)
+
+            BIND(datatype(?v1) as ?type1) .    
+            BIND(datatype(?v2) as ?type2) .    
+            BIND(IF(?v1 >= ?v2, ?v1, ?v2) as ?maxValue) .
+            BIND(IF(?v1 < ?v2, ?v1, ?v2) as ?minValue) .
+
+            BIND ((((?type1 = xsd:string || ?type1 = xsd:boolean) && ?v1 = ?v2) || ((?type1 = xsd:decimal || ?type1 = xsd:float || ?type1 = xsd:integer) && (100.0 - (?minValue * 100.0 / ?maxValue)) < 5)) as ?caracMatch)
+    		FILTER(!?caracMatch)
+        }
+    }
+    BIND ((?countCaracNoMatch = 0) as ?match)
+}  
 
 # R7 : Vérification des produits de coupage.
 SELECT DISTINCT ?match
@@ -147,26 +194,26 @@ WHERE
 }    
 
 # R8 : Vérification du dosage des produits de coupage.
-INSERT
-{
-    ?s1 :estEloigneDe ?s2
-}
-WHERE
-{
+SELECT ?match
+WHERE {
     {
-        SELECT ?s1 ?s2
-        WHERE
-        {
-            ?s1 :estProcheDe ?s2 .
+        SELECT ?dosageMatch
+        WHERE {
+            ?s1 a :Echantillon .
+            ?s2 a :Echantillon .
+            ?s1 :id \"%s\" .
+            ?s2 :id \"%s\" .
             ?s1 :aProduitCoupage ?pc1 .
-            ?pc1 :aSubstance ?s1 .
+            ?pc1 :aSubstance ?sb .
             ?pc1 :dosage ?d1 .
             ?s2 :aProduitCoupage ?pc2 .
-            ?pc2 :aSubstance ?s2 .
-            ?pc2 :dosage ?d2 .
-            FILTER (STR(?s1) < STR(?s2) && ?s1 = ?s2 && (ABS(?d1 - ?d2) > 5))
+            ?pc2 :aSubstance ?sb .
+            ?pc2 :dosage ?d2
+            BIND ((ABS(?d1 - ?d2) < 5) as ?dosageMatch)
         }
+        GROUP BY ?dosageMatch
     }
+    BIND ((?dosageMatch != false) as ?match)
 }
 
 
