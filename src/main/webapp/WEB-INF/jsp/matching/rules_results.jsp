@@ -27,6 +27,14 @@
                     
                     <ul class="list-group">
                         <li class="list-group-item disabled" aria-disabled="true">Type de drogue : ${sample2.drugType}</li>
+                        <li class="list-group-item disabled" aria-disabled="true">Principes actifs</li>
+                        <li class="list-group-item">
+                            <ul class="list-group">
+                                <c:forEach items="${sample2.cuttingProducts}" var="cuttingProduct">
+                                    <li class="list-group-item">${cuttingProduct.name} : ${cuttingProduct.dosage}</li>
+                                </c:forEach>
+                            </ul>
+                        </li>
                     </ul>
                 </div>
             </div>

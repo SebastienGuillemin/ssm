@@ -45,6 +45,9 @@ public class MatchingController {
 
         Sample sample1 = this.repository.findSampleById(sample1Id);
         Sample sample2 = this.repository.findSampleById(sample2Id);
+        System.out.println(sample1.getActivePrinciples().get(0).getName());
+        System.out.println(sample1.getActivePrinciples().get(0).getDosage());
+
 
         ModelAndView mv = new ModelAndView("matching/rules_results");
         mv.addObject("queries", ruleQueries);
