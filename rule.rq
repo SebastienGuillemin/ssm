@@ -54,29 +54,35 @@ WHERE
 }
 
 # R4 : Vérification des caractéristiques macroscopiques
-
-!!!!!!!!!!!!!! TODO : A TESTER !!!!!!!!!!!!!!
-(manque le subclassOf carac.Macro dans l'onto actuelle)
+PREFIX : <http://www.stups.fr/ontologies/2023/stups/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
 SELECT ?match
 WHERE 
 {
-    ?s1 a :Echantillon .
-    ?s2 a :Echantillon .
-    ?s1 :id \"%s\" .
-    ?s2 :id \"%s\" .
-    
-    ?p1 rdfs:subPropertyOf :caracteristiqueMacroscopique .
-    BIND(datatype(?v1) as ?type1)  .
-    
-    ?p2 rdfs:subPropertyOf :caracteristiqueMacroscopique .
-    BIND(datatype(?v2) as ?type2) .
-    ?s1 ?p1 ?v1 .
-    ?s2 ?p2 ?v2 .
-    BIND(IF(?v1 >= ?v2, ?v1, ?v2) as ?maxValue) .
-    BIND(IF(?v1 < ?v2, ?v1, ?v2) as ?minValue) .
-    
-    BIND ((((?type1 = xsd:string || ?type1 = xsd:boolean) && ?v1 != ?v2) || ((?type1 = xsd:decimal || ?type1 = xsd:float || ?type1 = xsd:integer) && (100.0 - (?minValue * 100.0 / ?maxValue)) > 5)) as ?match)
+    {
+		SELECT (COUNT(?caracMatch) as ?countCaracNoMatch)
+        WHERE 
+        {
+            ?s1 a :Echantillon .
+            ?s2 a :Echantillon .
+            ?s1 :id \"%s\" .
+            ?s2 :id \"%s\" .
+            ?s1 ?p1 ?v1 .
+            ?s2 ?p2 ?v2 .
+            ?p1 rdfs:subPropertyOf :caracteristiqueMacroscopique .
+            ?p2 rdfs:subPropertyOf :caracteristiqueMacroscopique .
+            FILTER(?p1 = ?p2 && ?p1 != :caracteristiqueMacroscopique && ?p2 != :caracteristiqueMacroscopique)
+            BIND(datatype(?v1) as ?type1) .    
+            BIND(datatype(?v2) as ?type2) .    
+            BIND(IF(?v1 >= ?v2, ?v1, ?v2) as ?maxValue) .
+            BIND(IF(?v1 < ?v2, ?v1, ?v2) as ?minValue) .
+            BIND ((((?type1 = xsd:string || ?type1 = xsd:boolean) && ?v1 = ?v2) || ((?type1 = xsd:decimal || ?type1 = xsd:float || ?type1 = xsd:integer) && (100.0 - (?minValue * 100.0 / ?maxValue)) < 5)) as ?caracMatch)
+    		FILTER(!?caracMatch)
+        }
+    }
+    BIND ((?countCaracNoMatch = 0) as ?match)
 }
 
 # R5 : Vérification des principes actifs.
@@ -190,7 +196,7 @@ WHERE
         }
     }
     #Check if the number of cutting products are the same for the two samples, if they have the same number of substances and if the number of common substances if equals to the number of substances.
-    BIND ((?countPC1 = ?countPC2 && ?countSB1 = ?countSB2 && ?countSB1 = ?commonSB) as ?match)
+    BIND ((?countPC1 > 0 && ?countPC1 = ?countPC2 && ?countSB1 = ?countSB2 && ?countSB1 = ?commonSB) as ?match)
 }    
 
 # R8 : Vérification du dosage des produits de coupage.

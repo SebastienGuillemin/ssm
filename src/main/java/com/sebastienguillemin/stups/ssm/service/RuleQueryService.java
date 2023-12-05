@@ -132,7 +132,7 @@ public class RuleQueryService {
         + "            ?ap2 :aSubstance ?sb .\n"
         + "        }\n"
         + "    }\n"
-        + "    BIND ((?countAP1 = ?countAP2 && ?countSB1 = ?countSB2 && ?countSB1 = ?commonSB) as ?match)\n"
+        + "    BIND ((?countAP1 > 0 &&  ?countAP1 = ?countAP2 && ?countSB1 = ?countSB2 && ?countSB1 = ?commonSB) as ?match)\n"
         + "}";
 
     public final static String DOSAGE_ACTIVE_PRINCIPLES_RULE =
@@ -192,7 +192,7 @@ public class RuleQueryService {
         + "            ?pc2 :aSubstance ?sb .\n"
         + "        }\n"
         + "    }\n"
-        + "    BIND ((?countPC1 = ?countPC2 && ?countSB1 = ?countSB2 && ?countSB1 = ?commonSB) as ?match)\n"
+        + "    BIND ((?countPC1 > 0 &&  ?countPC1 = ?countPC2 && ?countSB1 = ?countSB2 && ?countSB1 = ?commonSB) as ?match)\n"
         + "}";
     
     public final static String DOSAGE_CUTTING_PRODUCTS_RULE =
@@ -237,7 +237,7 @@ public class RuleQueryService {
         RuleQuery logoQuery = new RuleQuery("Même logos", String.format(LOGO_RULE, sample1Id, sample2Id));
         RuleQuery chimicalFormQuery = new RuleQuery("Mêmes formes chimiques", String.format(CHIMICAL_FORM_RULE, sample1Id, sample2Id));
         RuleQuery dateQuery = new RuleQuery("Dates de saisie éloignés de moins de 6 mois", String.format(DATE_RULE, sample1Id, sample2Id));
-        RuleQuery macroCaracQuery = new RuleQuery("Les caractéristiques macroscopiques sont différentes de moins de 5%", String.format(MACROSCOPIC_CHARACTERISTICS_RULE, sample1Id, sample2Id));
+        RuleQuery macroCaracQuery = new RuleQuery("Caractéristiques macroscopiques différentes de moins de 5%", String.format(MACROSCOPIC_CHARACTERISTICS_RULE, sample1Id, sample2Id));
         // TODO : caract. macro.
 
         // TODO : ne tester le dosage des principes actifs que s'il y a les mêmes principes actifs.
