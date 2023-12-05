@@ -58,7 +58,6 @@ WHERE
 !!!!!!!!!!!!!! TODO : A TESTER !!!!!!!!!!!!!!
 (manque le subclassOf carac.Macro dans l'onto actuelle)
 
-
 SELECT ?match
 WHERE 
 {
