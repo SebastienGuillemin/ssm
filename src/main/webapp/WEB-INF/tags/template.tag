@@ -10,7 +10,7 @@
     <div class="container">
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <div class="container-fluid">
-              <a class="navbar-brand" href="/">Accueil</a>
+              <a class="navbar-brand" href="/">Choix echantillons</a>
             </div>
         </nav>
     </div>

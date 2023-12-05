@@ -36,6 +36,13 @@ public class MatchingController {
     @PostMapping("/selectSamples")
     public ModelAndView selectSamplesFormHandle(@RequestParam String sample1Id, @RequestParam String sample2Id) throws Exception {
         List<RuleQuery> ruleQueries = this.ruleQueryService.exectuteQueries(sample1Id, sample2Id);
+        boolean match = true;
+        for (RuleQuery query : ruleQueries)
+            if (!query.isPassed()) {
+                match = false;
+                break;
+            }
+
         Sample sample1 = this.repository.findSampleById(sample1Id);
         Sample sample2 = this.repository.findSampleById(sample2Id);
 
@@ -43,6 +50,7 @@ public class MatchingController {
         mv.addObject("queries", ruleQueries);
         mv.addObject("sample1", sample1);
         mv.addObject("sample2", sample2);
+        mv.addObject("match", match);
 
         return mv;
     }

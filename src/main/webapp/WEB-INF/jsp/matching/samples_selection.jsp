@@ -3,7 +3,7 @@
 <%@taglib prefix="c" uri="jakarta.tags.core" %>
 
 <t:template>
-    <h1>Choix d'un échantillon</h1>
+    <h1>Choix des échantillons</h1>
 
     <div class="mt-5">
         <form id="samplesSelectionForm" action="selectSamples" method="POST">
