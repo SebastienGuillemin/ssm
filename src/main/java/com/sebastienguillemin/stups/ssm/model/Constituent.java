@@ -7,5 +7,5 @@ import lombok.Setter;
 @Setter
 public class Constituent {
     private String name;
-    private String dosage;
+    private float dosage;
 }

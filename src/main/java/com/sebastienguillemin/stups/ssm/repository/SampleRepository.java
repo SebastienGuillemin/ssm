@@ -1,9 +1,12 @@
 package com.sebastienguillemin.stups.ssm.repository;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
-import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.SimpleLiteral;
 import org.eclipse.rdf4j.query.Binding;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryEvaluationException;
@@ -68,6 +71,8 @@ public class SampleRepository {
         sample.setDrugType(this.findDrugType(sampleId));
         sample.setActivePrinciples(this.findActivePrinciples(sampleId));
         sample.setCuttingProducts(this.findCuttingProducts(sampleId));
+        sample.setChimicalForm(this.findChemicalForm(sampleId));
+        sample.setDate(this.findDate(sampleId));
 
         return sample;
     }
@@ -93,7 +98,7 @@ public class SampleRepository {
             while (tupleQueryResult.hasNext()) {
                 BindingSet bindingSet = tupleQueryResult.next();
                 
-                drugType = bindingSet.getBinding("d").getValue().toString();
+                drugType = ((SimpleLiteral) bindingSet.getBinding("d").getValue()).stringValue();
             }
             tupleQueryResult.close();
         } catch(QueryEvaluationException e) {
@@ -113,7 +118,6 @@ public class SampleRepository {
         try {
             String query = 
               "PREFIX : <http://www.stups.fr/ontologies/2023/stups/>\n"
-            + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
             + "SELECT ?name ?dosage\n"
             + "WHERE {\n"
             + "    ?s a :Echantillon .\n"
@@ -132,10 +136,10 @@ public class SampleRepository {
             Constituent constituent;
             while (tupleQueryResult.hasNext()) {
                 BindingSet bindingSet = tupleQueryResult.next();
-                
+
                 constituent = new Constituent();
-                constituent.setName(bindingSet.getBinding("name").getValue().toString());
-                constituent.setDosage(bindingSet.getBinding("dosage").getValue().toString());
+                constituent.setName(( (SimpleLiteral) bindingSet.getBinding("name").getValue()).stringValue());
+                constituent.setDosage(( (SimpleLiteral) bindingSet.getBinding("dosage").getValue()).floatValue());
 
                 activePrinciples.add(constituent);
             }
@@ -152,12 +156,11 @@ public class SampleRepository {
 
     private List<Constituent> findCuttingProducts(String sampleId) {
         RepositoryConnection connection = this.repository.getConnection();
-        List<Constituent> activePrinciples = new ArrayList<>();
+        List<Constituent> cuttingProducts = new ArrayList<>();
 
         try {
             String query = 
               "PREFIX : <http://www.stups.fr/ontologies/2023/stups/>\n"
-            + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
             + "SELECT ?name ?dosage\n"
             + "WHERE {\n"
             + "    ?s a :Echantillon .\n"
@@ -176,12 +179,12 @@ public class SampleRepository {
             Constituent constituent;
             while (tupleQueryResult.hasNext()) {
                 BindingSet bindingSet = tupleQueryResult.next();
-                
-                constituent = new Constituent();
-                constituent.setName(bindingSet.getBinding("name").getValue().toString());
-                constituent.setDosage(bindingSet.getBinding("dosage").getValue().toString());
 
-                activePrinciples.add(constituent);
+                constituent = new Constituent();
+                constituent.setName(( (SimpleLiteral) bindingSet.getBinding("name").getValue()).stringValue());
+                constituent.setDosage(( (SimpleLiteral) bindingSet.getBinding("dosage").getValue()).floatValue());
+
+                cuttingProducts.add(constituent);
             }
             tupleQueryResult.close();
         } catch(QueryEvaluationException e) {
@@ -191,6 +194,84 @@ public class SampleRepository {
         finally {
             connection.close();
         }
-        return activePrinciples;
+        return cuttingProducts;
+    }
+
+    private String findChemicalForm(String sampleId) {
+        RepositoryConnection connection = this.repository.getConnection();
+        String chimicalForm = "";
+
+        try {
+            String query = 
+              "PREFIX : <http://www.stups.fr/ontologies/2023/stups/>\n"
+            + "SELECT ?labelChimicalForm\n"
+            + "WHERE {\n"
+            + "    ?s a :Echantillon .\n"
+            + "    ?s :id  \"%s\" .\n"
+            + "    ?s :aPrincipeActif ?ap .\n"
+            + "    ?p :aFormeChimique ?cf .\n"
+            + "    ?cf :libelleFormeChimique ?labelChimicalForm .\n"
+            + "}";
+
+            TupleQuery tupleQuery = connection.prepareTupleQuery(QueryLanguage.SPARQL, String.format(query, sampleId));
+
+            TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+            
+            while (tupleQueryResult.hasNext()) {
+                BindingSet bindingSet = tupleQueryResult.next();
+                
+                chimicalForm = ((SimpleLiteral) bindingSet.getBinding("labelChimicalForm").getValue()).stringValue();
+            }
+            tupleQueryResult.close();
+        } catch(QueryEvaluationException e) {
+            e.printStackTrace();
+            return null;
+        }
+        finally {
+            connection.close();
+        }
+        return chimicalForm;
+    }
+
+    private Date findDate(String sampleId) {
+        RepositoryConnection connection = this.repository.getConnection();
+        Date date = null;
+
+        try {
+            String query = 
+              "PREFIX : <http://www.stups.fr/ontologies/2023/stups/>\n"
+            + "SELECT ?date\n"
+            + "WHERE\n"
+            + "{\n"
+            + "    ?s a :Echantillon .\n"
+            + "    ?s :id \"%s\" .\n"
+            + "    ?s :provientDe ?sealed .\n"
+            + "    ?sealed :estDansSaisine ?seizure .\n"
+            + "    ?seizure :date ?date .\n"
+            + "}";
+
+            TupleQuery tupleQuery = connection.prepareTupleQuery(QueryLanguage.SPARQL, String.format(query, sampleId));
+
+            TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+            
+            while (tupleQueryResult.hasNext()) {
+                BindingSet bindingSet = tupleQueryResult.next();
+                
+                String dateString = ((SimpleLiteral) bindingSet.getBinding("date").getValue()).stringValue();
+
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+                date = dateFormat.parse(dateString);
+
+            }
+            tupleQueryResult.close();
+        } catch(QueryEvaluationException | ParseException e) {
+            e.printStackTrace();
+            return null;
+        }
+        finally {
+            connection.close();
+        }
+        System.out.println(date);
+        return date;
     }
 }

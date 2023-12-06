@@ -15,6 +15,22 @@
                     
                     <ul class="list-group">
                         <li class="list-group-item disabled" aria-disabled="true">Type de drogue : ${sample1.drugType}</li>
+                        <li class="list-group-item disabled" aria-disabled="true">Forme chimique : ${sample1.chimicalForm}</li>
+                        <li class="list-group-item disabled" aria-disabled="true">Principes actifs :
+                            <ul class="list-group p-1">
+                                <c:forEach items="${sample1.activePrinciples}" var="activePrinciple">
+                                    <li class="list-group-item">Nom : <span class="text-primary">${activePrinciple.name}</span>, Dosage : <span class="text-primary">${activePrinciple.dosage}</span></li>
+                                </c:forEach>
+                            </ul>
+                        </li>
+                        <li class="list-group-item disabled" aria-disabled="true">Produits de coupage :
+                            <ul class="list-group p-1">
+                                <c:forEach items="${sample1.cuttingProducts}" var="cuttingProduct">
+                                    <li class="list-group-item">Nom : <span class="text-primary">${cuttingProduct.name}</span>, Dosage : <span class="text-primary">${cuttingProduct.dosage}</span></li>
+                                </c:forEach>
+                            </ul>
+                        </li>
+                        <li class="list-group-item disabled" aria-disabled="true">Date : ${sample1.date}</li>
                     </ul>
                 </div>
             </div>
@@ -27,11 +43,18 @@
                     
                     <ul class="list-group">
                         <li class="list-group-item disabled" aria-disabled="true">Type de drogue : ${sample2.drugType}</li>
-                        <li class="list-group-item disabled" aria-disabled="true">Principes actifs</li>
-                        <li class="list-group-item">
-                            <ul class="list-group">
+                        <li class="list-group-item disabled" aria-disabled="true">Forme chimique : ${sample2.chimicalForm}</li>
+                        <li class="list-group-item disabled" aria-disabled="true">Principes actifs :
+                            <ul class="list-group p-1">
+                                <c:forEach items="${sample2.activePrinciples}" var="activePrinciple">
+                                    <li class="list-group-item">Nom : <span class="text-primary">${activePrinciple.name}</span>, Dosage : <span class="text-primary">${activePrinciple.dosage}</span></li>
+                                </c:forEach>
+                            </ul>
+                        </li>
+                        <li class="list-group-item disabled" aria-disabled="true">Produits de coupage :
+                            <ul class="list-group p-1">
                                 <c:forEach items="${sample2.cuttingProducts}" var="cuttingProduct">
-                                    <li class="list-group-item">${cuttingProduct.name} : ${cuttingProduct.dosage}</li>
+                                    <li class="list-group-item">Nom : <span class="text-primary">${cuttingProduct.name}</span>, Dosage : <span class="text-primary">${cuttingProduct.dosage}</span></li>
                                 </c:forEach>
                             </ul>
                         </li>
