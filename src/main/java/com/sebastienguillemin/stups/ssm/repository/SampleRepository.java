@@ -1,11 +1,13 @@
 package com.sebastienguillemin.stups.ssm.repository;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.List;
 
+import org.eclipse.rdf4j.model.impl.SimpleIRI;
 import org.eclipse.rdf4j.model.impl.SimpleLiteral;
 import org.eclipse.rdf4j.query.Binding;
 import org.eclipse.rdf4j.query.BindingSet;
@@ -20,6 +22,8 @@ import org.springframework.stereotype.Repository;
 import com.ontotext.graphdb.repository.http.GraphDBHTTPRepository;
 import com.sebastienguillemin.stups.ssm.model.Constituent;
 import com.sebastienguillemin.stups.ssm.model.Sample;
+
+import jakarta.xml.bind.DatatypeConverter;
 
 @Repository
 public class SampleRepository {
@@ -73,6 +77,8 @@ public class SampleRepository {
         sample.setCuttingProducts(this.findCuttingProducts(sampleId));
         sample.setChimicalForm(this.findChemicalForm(sampleId));
         sample.setDate(this.findDate(sampleId));
+        sample.setCharacteristics(this.findCharacteristics(sampleId));
+        sample.setLogo(this.findLogo(sampleId));
 
         return sample;
     }
@@ -233,9 +239,9 @@ public class SampleRepository {
         return chimicalForm;
     }
 
-    private String findDate(String sampleId) {
+    private LocalDateTime findDate(String sampleId) {
         RepositoryConnection connection = this.repository.getConnection();
-        String date = "";
+        LocalDateTime date = null;
 
         try {
             String query = 
@@ -257,7 +263,9 @@ public class SampleRepository {
             while (tupleQueryResult.hasNext()) {
                 BindingSet bindingSet = tupleQueryResult.next();
                 
-                date = ((SimpleLiteral) bindingSet.getBinding("date").getValue()).calendarValue().toString();
+                String dateString = ((SimpleLiteral) bindingSet.getBinding("date").getValue()).calendarValue().toString();
+
+                date = ((GregorianCalendar) (DatatypeConverter.parseDateTime(dateString))).toZonedDateTime().withZoneSameLocal(ZoneId.systemDefault()).toLocalDateTime();
 
             }
             tupleQueryResult.close();
@@ -270,5 +278,79 @@ public class SampleRepository {
         }
         System.out.println(date);
         return date;
+    }
+
+    private HashMap<String, String> findCharacteristics(String sampleId) {
+        RepositoryConnection connection = this.repository.getConnection();
+        HashMap<String, String> characteristics = new HashMap<>();
+
+        try {
+            String query = 
+              "PREFIX : <http://www.stups.fr/ontologies/2023/stups/>\n"
+            + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
+            + "SELECT ?charac ?value\n"
+            + "WHERE\n"
+            + "{\n"
+            + "    ?s a :Echantillon .\n"
+            + "    ?s :id \"%s\".\n"
+            + "    ?s ?charac ?value .\n"
+            + "    ?charac rdfs:subPropertyOf :caracteristiqueMacroscopique .\n"
+            + "    FILTER (?charac != :caracteristiqueMacroscopique)\n"
+            + "}";
+
+            TupleQuery tupleQuery = connection.prepareTupleQuery(QueryLanguage.SPARQL, String.format(query, sampleId));
+
+            TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+            String key, value;
+            while (tupleQueryResult.hasNext()) {
+                BindingSet bindingSet = tupleQueryResult.next();
+
+                key = ((SimpleIRI) bindingSet.getBinding("charac").getValue()).getLocalName();
+                value = ((SimpleLiteral) bindingSet.getBinding("value").getValue()).stringValue();
+
+                characteristics.put(key, value);
+            }
+            tupleQueryResult.close();
+        } catch(QueryEvaluationException e) {
+            e.printStackTrace();
+            return null;
+        }
+        finally {
+            connection.close();
+        }
+        return characteristics;
+    }
+
+    private String findLogo(String sampleId) {
+        RepositoryConnection connection = this.repository.getConnection();
+        String logo = "";
+
+        try {
+            String query = 
+              "PREFIX : <http://www.stups.fr/ontologies/2023/stups/>\n"
+            + "SELECT ?logo\n"
+            + "WHERE {\n"
+            + "    ?s a :Echantillon .\n"
+            + "    ?s :id \"%s\" .\n"
+            + "    ?s :nomLogo ?logo .\n"
+            + "}";
+
+            TupleQuery tupleQuery = connection.prepareTupleQuery(QueryLanguage.SPARQL, String.format(query, sampleId));
+
+            TupleQueryResult tupleQueryResult = tupleQuery.evaluate();
+            while (tupleQueryResult.hasNext()) {
+                BindingSet bindingSet = tupleQueryResult.next();
+
+                logo = ((SimpleLiteral) bindingSet.getBinding("logo").getValue()).stringValue();
+            }
+            tupleQueryResult.close();
+        } catch(QueryEvaluationException e) {
+            e.printStackTrace();
+            return null;
+        }
+        finally {
+            connection.close();
+        }
+        return logo;
     }
 }
