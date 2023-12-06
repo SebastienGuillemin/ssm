@@ -276,7 +276,7 @@ public class SampleRepository {
         finally {
             connection.close();
         }
-        System.out.println(date);
+
         return date;
     }
 
