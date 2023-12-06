@@ -233,9 +233,9 @@ public class SampleRepository {
         return chimicalForm;
     }
 
-    private Date findDate(String sampleId) {
+    private String findDate(String sampleId) {
         RepositoryConnection connection = this.repository.getConnection();
-        Date date = null;
+        String date = "";
 
         try {
             String query = 
@@ -257,14 +257,11 @@ public class SampleRepository {
             while (tupleQueryResult.hasNext()) {
                 BindingSet bindingSet = tupleQueryResult.next();
                 
-                String dateString = ((SimpleLiteral) bindingSet.getBinding("date").getValue()).stringValue();
-
-                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-                date = dateFormat.parse(dateString);
+                date = ((SimpleLiteral) bindingSet.getBinding("date").getValue()).calendarValue().toString();
 
             }
             tupleQueryResult.close();
-        } catch(QueryEvaluationException | ParseException e) {
+        } catch(QueryEvaluationException e) {
             e.printStackTrace();
             return null;
         }
